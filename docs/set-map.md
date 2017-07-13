@@ -21,7 +21,7 @@ for (let i of s) {
 
 上面代码通过`add`方法向 Set 结构加入成员，结果表明 Set 结构不会添加重复的值。
 
-Set 函数可以接受一个数组（或类似数组的对象）作为参数，用来初始化。
+Set 函数可以接受一个数组（或者具有 iterable 接口的其他数据结构）作为参数，用来初始化。
 
 ```javascript
 // 例一
@@ -467,7 +467,7 @@ items.forEach(
 );
 ```
 
-事实上，不仅仅是数组，任何具有 Iterator 接口的数据结构（详见《Iterator》一章）都可以当作`Map`构造函数的参数。这就是说，`Set`和`Map`都可以用来生成新的 Map。
+事实上，不仅仅是数组，任何具有 Iterator 接口、且每个成员都是一个双元素的数组的数据结构（详见《Iterator》一章）都可以当作`Map`构造函数的参数。这就是说，`Set`和`Map`都可以用来生成新的 Map。
 
 ```javascript
 const set = new Set([
@@ -890,7 +890,7 @@ jsonToMap('[[true,7],[{"foo":3},["abc"]]]')
 
 ### 含义
 
-`WeakMap`结构与`Map`结构类似，也是用于生成键值对。
+`WeakMap`结构与`Map`结构类似，也是用于生成键值对的集合。
 
 ```javascript
 // WeakMap 可以使用 set 方法添加成员
@@ -983,6 +983,19 @@ wm.get(key)
 
 上面代码中，键值`obj`是正常引用。所以，即使在 WeakMap 外部消除了`obj`的引用，WeakMap 内部的引用依然存在。
 
+### WeakMap 的语法
+
+WeakMap 与 Map 在 API 上的区别主要是两个，一是没有遍历操作（即没有`key()`、`values()`和`entries()`方法），也没有`size`属性。因为没有办法列出所有键名，某个键名是否存在完全不可预测，跟垃圾回收机制是否运行相关。这一刻可以取到键名，下一刻垃圾回收机制突然运行了，这个键名就没了，为了防止出现不确定性，就统一规定不能取到键名。二是无法清空，即不支持`clear`方法。因此，`WeakMap`只有四个方法可用：`get()`、`set()`、`has()`、`delete()`。
+
+```javascript
+const wm = new WeakMap();
+
+// size、forEach、clear 方法都不存在
+wm.size // undefined
+wm.forEach // undefined
+wm.clear // undefined
+```
+
 ### WeakMap 的示例
 
 WeakMap 的例子很难演示，因为无法观察它里面的引用会自动消失。此时，其他引用都解除了，已经没有引用指向 WeakMap 的键名了，导致无法证实那个键名是不是存在。
@@ -1014,45 +1027,37 @@ undefined
 > let wm = new WeakMap();
 undefined
 
-> let b = new Object();
+// 新建一个变量 key，指向一个 5*1024*1024 的数组
+> let key = new Array(5*1024*1024);
 undefined
 
-> global.gc();
-undefined
-
-// 此时，heapUsed 仍然为 4M 左右
-> process.memoryUsage();
-{ rss: 20537344,
-  heapTotal: 9474048,
-  heapUsed: 3967272,
-  external: 8993 }
-
-// 在 WeakMap 中添加一个键值对，
-// 键名为对象 b，键值为一个 5*1024*1024 的数组
-> wm.set(b, new Array(5*1024*1024));
+// 设置 WeakMap 实例的键名，也指向 key 数组
+// 这时，key 数组的引用计数为 2，
+// 变量 key 引用一次，WeakMap 的键名引用第二次
+> wm.set(key,1);
 WeakMap {}
 
-// 手动执行一次垃圾回收
 > global.gc();
 undefined
 
-// 此时，heapUsed 为 45M 左右
+// 这时内存占用 heapUsed 增加到 45M 了
 > process.memoryUsage();
-{ rss: 62652416,
-  heapTotal: 51437568,
-  heapUsed: 45911664,
-  external: 8951 }
+{ rss: 67538944,
+  heapTotal: 7376896,
+  heapUsed: 45782816,
+  external: 8945 }
 
-// 解除对象 b 的引用
-> b = null;
+// 清除变量 key 对数组的引用，
+// 但没有手动清除 WeakMap 实例的键名对数组的引用
+> key = null;
 null
 
 // 再次执行垃圾回收
 > global.gc();
 undefined
 
-// 解除 b 的引用以后，heapUsed 变回 4M 左右
-// 说明 WeakMap 中的那个长度为 5*1024*1024 的数组被销毁了
+// 内存占用 heapUsed 变回 4M 左右，
+// 可以看到 WeakMap 的键名引用没有阻止 gc 对内存的回收
 > process.memoryUsage();
 { rss: 20639744,
   heapTotal: 8425472,
@@ -1061,19 +1066,6 @@ undefined
 ```
 
 上面代码中，只要外部的引用消失，WeakMap 内部的引用，就会自动被垃圾回收清除。由此可见，有了 WeakMap 的帮助，解决内存泄漏就会简单很多。
-
-### WeakMap 的语法
-
-WeakMap 与 Map 在 API 上的区别主要是两个，一是没有遍历操作（即没有`key()`、`values()`和`entries()`方法），也没有`size`属性。因为没有办法列出所有键名，这个键名是否存在完全不可预测，跟垃圾回收机制是否运行相关。二是无法清空，即不支持`clear`方法。因此，`WeakMap`只有四个方法可用：`get()`、`set()`、`has()`、`delete()`。
-
-```javascript
-const wm = new WeakMap();
-
-// size、forEach、clear 方法都不存在
-wm.size // undefined
-wm.forEach // undefined
-wm.clear // undefined
-```
 
 ### WeakMap 的用途
 

@@ -2,19 +2,19 @@
 
 ## 类的修饰
 
-修饰器（Decorator）是一个函数，用来修改类的行为。这是ES7的一个[提案](https://github.com/wycats/javascript-decorators)，目前Babel转码器已经支持。
-
-修饰器对类的行为的改变，是代码编译时发生的，而不是在运行时。这意味着，修饰器能在编译阶段运行代码。
+修饰器（Decorator）是一个函数，用来修改类的行为。ES2017 引入了这项功能，目前 Babel 转码器已经支持。
 
 ```javascript
+@testable
+class MyTestableClass {
+  // ...
+}
+
 function testable(target) {
   target.isTestable = true;
 }
 
-@testable
-class MyTestableClass {}
-
-console.log(MyTestableClass.isTestable) // true
+MyTestableClass.isTestable // true
 ```
 
 上面代码中，`@testable`就是一个修饰器。它修改了`MyTestableClass`这个类的行为，为它加上了静态属性`isTestable`。
@@ -31,7 +31,7 @@ class A {}
 A = decorator(A) || A;
 ```
 
-也就是说，修饰器本质就是编译时执行的函数。
+注意，修饰器对类的行为的改变，是代码编译时发生的，而不是在运行时。这意味着，修饰器能在编译阶段运行代码。也就是说，修饰器本质就是编译时执行的函数。
 
 修饰器函数的第一个参数，就是所要修饰的目标类。
 
@@ -117,6 +117,23 @@ Object.assign(MyClass.prototype, Foo);
 let obj = new MyClass();
 obj.foo() // 'foo'
 ```
+
+实际开发中，React 与 Redux 库结合使用时，常常需要写成下面这样。
+
+```javascript
+class MyReactComponent extends React.Component {}
+
+export default connect(mapStateToProps, mapDispatchToProps)(MyReactComponent);
+```
+
+有了装饰器，就可以改写上面的代码。
+
+```javascript
+@connect(mapStateToProps, mapDispatchToProps)
+export default class MyReactComponent extends React.Component {}
+```
+
+相对来说，后一种写法看上去更容易理解。
 
 ## 方法的修饰
 
@@ -288,6 +305,25 @@ readOnly = require("some-decorator");
 ```
 
 总之，由于存在函数提升，使得修饰器不能用于函数。类是不会提升的，所以就没有这方面的问题。
+
+另一方面，如果一定要修饰函数，可以采用高阶函数的形式直接执行。
+
+```javascript
+function doSomething(name) {
+  console.log('Hello, ' + name);
+}
+
+function loggingDecorator(wrapped) {
+  return function() {
+    console.log('Starting');
+    const result = wrapped.apply(this, arguments);
+    console.log('Finished');
+    return result;
+  }
+}
+
+const wrapped = loggingDecorator(doSomething);
+```
 
 ## core-decorators.js
 

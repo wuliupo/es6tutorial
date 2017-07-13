@@ -432,7 +432,7 @@ Object.assign({b: 'c'},
 
 上面代码中，`Object.assign`要拷贝的对象只有一个不可枚举属性`invisible`，这个属性并没有被拷贝进去。
 
-属性名为Symbol值的属性，也会被`Object.assign`拷贝。
+属性名为 Symbol 值的属性，也会被`Object.assign`拷贝。
 
 ```javascript
 Object.assign({ a: 'b' }, { [Symbol('c')]: 'd' })
@@ -601,13 +601,13 @@ Object.getOwnPropertyDescriptor(obj, 'foo')
 
 描述对象的`enumerable`属性，称为”可枚举性“，如果该属性为`false`，就表示某些操作会忽略当前属性。
 
-ES5有三个操作会忽略`enumerable`为`false`的属性。
+ES5 有三个操作会忽略`enumerable`为`false`的属性。
 
 - `for...in`循环：只遍历对象自身的和继承的可枚举的属性
 - `Object.keys()`：返回对象自身的所有可枚举的属性的键名
 - `JSON.stringify()`：只串行化对象自身的可枚举的属性
 
-ES6新增了一个操作`Object.assign()`，会忽略`enumerable`为`false`的属性，只拷贝对象自身的可枚举的属性。
+ES6 新增了一个操作`Object.assign()`，会忽略`enumerable`为`false`的属性，只拷贝对象自身的可枚举的属性。
 
 这四个操作之中，只有`for...in`会返回继承的属性。实际上，引入`enumerable`的最初目的，就是让某些属性可以规避掉`for...in`操作。比如，对象原型的`toString`方法，以及数组的`length`属性，就通过这种手段，不会被`for...in`遍历到。
 
@@ -632,40 +632,40 @@ Object.getOwnPropertyDescriptor(class {foo() {}}.prototype, 'foo').enumerable
 
 ## 属性的遍历
 
-ES6一共有5种方法可以遍历对象的属性。
+ES6 一共有5种方法可以遍历对象的属性。
 
 **（1）for...in**
 
-`for...in`循环遍历对象自身的和继承的可枚举属性（不含Symbol属性）。
+`for...in`循环遍历对象自身的和继承的可枚举属性（不含 Symbol 属性）。
 
 **（2）Object.keys(obj)**
 
-`Object.keys`返回一个数组，包括对象自身的（不含继承的）所有可枚举属性（不含Symbol属性）。
+`Object.keys`返回一个数组，包括对象自身的（不含继承的）所有可枚举属性（不含 Symbol 属性）。
 
 **（3）Object.getOwnPropertyNames(obj)**
 
-`Object.getOwnPropertyNames`返回一个数组，包含对象自身的所有属性（不含Symbol属性，但是包括不可枚举属性）。
+`Object.getOwnPropertyNames`返回一个数组，包含对象自身的所有属性（不含 Symbol 属性，但是包括不可枚举属性）。
 
 **（4）Object.getOwnPropertySymbols(obj)**
 
-`Object.getOwnPropertySymbols`返回一个数组，包含对象自身的所有Symbol属性。
+`Object.getOwnPropertySymbols`返回一个数组，包含对象自身的所有 Symbol 属性。
 
 **（5）Reflect.ownKeys(obj)**
 
-`Reflect.ownKeys`返回一个数组，包含对象自身的所有属性，不管属性名是Symbol或字符串，也不管是否可枚举。
+`Reflect.ownKeys`返回一个数组，包含对象自身的所有属性，不管属性名是 Symbol 或字符串，也不管是否可枚举。
 
 以上的5种方法遍历对象的属性，都遵守同样的属性遍历的次序规则。
 
 - 首先遍历所有属性名为数值的属性，按照数字排序。
 - 其次遍历所有属性名为字符串的属性，按照生成时间排序。
-- 最后遍历所有属性名为Symbol值的属性，按照生成时间排序。
+- 最后遍历所有属性名为 Symbol 值的属性，按照生成时间排序。
 
 ```javascript
 Reflect.ownKeys({ [Symbol()]:0, b:0, 10:0, 2:0, a:0 })
 // ['2', '10', 'b', 'a', Symbol()]
 ```
 
-上面代码中，`Reflect.ownKeys`方法返回一个数组，包含了参数对象的所有属性。这个数组的属性次序是这样的，首先是数值属性`2`和`10`，其次是字符串属性`b`和`a`，最后是Symbol属性。
+上面代码中，`Reflect.ownKeys`方法返回一个数组，包含了参数对象的所有属性。这个数组的属性次序是这样的，首先是数值属性`2`和`10`，其次是字符串属性`b`和`a`，最后是 Symbol 属性。
 
 ## `__proto__`属性，Object.setPrototypeOf()，Object.getPrototypeOf()
 
@@ -1101,6 +1101,24 @@ let aClone = { ...a };
 let aClone = Object.assign({}, a);
 ```
 
+上面的例子只是拷贝了对象实例的属性，如果想完整克隆一个对象，还拷贝对象原型的属性，可以采用下面的写法。
+
+```javascript
+// 写法一
+const clone1 = {
+  __proto__: Object.getPrototypeOf(obj),
+  ...obj
+};
+
+// 写法二
+const clone2 = Object.assign(
+  Object.create(Object.getPrototypeOf(obj)),
+  obj
+);
+```
+
+上面代码中，写法一的`__proto__`属性在非浏览器的环境不一定部署，因此推荐使用写法二。
+
 扩展运算符可以用于合并两个对象。
 
 ```javascript
@@ -1123,7 +1141,7 @@ let aWithOverrides = Object.assign({}, a, { x: 1, y: 2 });
 
 上面代码中，`a`对象的`x`属性和`y`属性，拷贝到新对象后会被覆盖掉。
 
-这用来修改现有对象部分的部分属性就很方便了。
+这用来修改现有对象部分的属性就很方便了。
 
 ```javascript
 let newVersion = {
@@ -1144,10 +1162,32 @@ let aWithDefaults = Object.assign({}, { x: 1, y: 2 }, a);
 let aWithDefaults = Object.assign({ x: 1, y: 2 }, a);
 ```
 
+与数组的扩展运算符一样，对象的扩展运算符后面可以跟表达式。
+
+```javascript
+const obj = {
+  ...(x > 1 ? {a: 1} : {}),
+  b: 2,
+};
+```
+
+如果扩展运算符后面是一个空对象，则没有任何效果。
+
+```javascript
+{...{}, a: 1}
+// { a: 1 }
+```
+
+如果扩展运算符的参数是`null`或`undefined`，这两个值会被忽略，不会报错。
+
+```javascript
+let emptyObject = { ...null, ...undefined }; // 不报错
+```
+
 扩展运算符的参数对象之中，如果有取值函数`get`，这个函数是会执行的。
 
 ```javascript
-// 并不会抛出错误，因为x属性只是被定义，但没执行
+// 并不会抛出错误，因为 x 属性只是被定义，但没执行
 let aWithXGetter = {
   ...a,
   get x() {
@@ -1155,7 +1195,7 @@ let aWithXGetter = {
   }
 };
 
-// 会抛出错误，因为x属性被执行了
+// 会抛出错误，因为 x 属性被执行了
 let runtimeError = {
   ...a,
   ...{
@@ -1166,15 +1206,9 @@ let runtimeError = {
 };
 ```
 
-如果扩展运算符的参数是`null`或`undefined`，这两个值会被忽略，不会报错。
-
-```javascript
-let emptyObject = { ...null, ...undefined }; // 不报错
-```
-
 ## Object.getOwnPropertyDescriptors()
 
-ES5有一个`Object.getOwnPropertyDescriptor`方法，返回某个对象属性的描述对象（descriptor）。
+ES5 一个`Object.getOwnPropertyDescriptor`方法，返回某个对象属性的描述对象（descriptor）。
 
 ```javascript
 var obj = { p: 'a' };
@@ -1337,9 +1371,13 @@ let a = {a: 'a'};
 let b = {b: 'b'};
 let c = {c: 'c'};
 let d = mix(c).with(a, b);
+
+d.c // "c"
+d.b // "b"
+d.a // "a"
 ```
 
-上面代码中，对象`a`和`b`被混入了对象`c`。
+上面代码返回一个新的对象`d`，代表了对象`a`和`b`被混入了对象`c`的操作。
 
 出于完整性的考虑，`Object.getOwnPropertyDescriptors`进入标准以后，还会有`Reflect.getOwnPropertyDescriptors`方法。
 
