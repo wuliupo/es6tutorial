@@ -24,7 +24,7 @@ ES6 规格使用了一些专门的术语，了解这些术语，可以帮助你�
 
 ### 抽象操作
 
-所谓”抽象操作“（abstract operations）就是引擎的一些内部方法，外部不能调用。规格定义了一系列的抽象操作，规定了它们的行为，留给各种引擎自己去实现。
+所谓“抽象操作”（abstract operations）就是引擎的一些内部方法，外部不能调用。规格定义了一系列的抽象操作，规定了它们的行为，留给各种引擎自己去实现。
 
 举例来说，`Boolean(value)`的算法，第一步是这样的。
 
@@ -32,7 +32,7 @@ ES6 规格使用了一些专门的术语，了解这些术语，可以帮助你�
 
 这里的`ToBoolean`就是一个抽象操作，是引擎内部求出布尔值的算法。
 
-许多函数的算法都会多次用到同样的步骤，所以 ES6 规格将它们抽出来，定义成”抽象操作“，方便描述。
+许多函数的算法都会多次用到同样的步骤，所以 ES6 规格将它们抽出来，定义成“抽象操作”，方便描述。
 
 ### Record 和 field
 
@@ -70,12 +70,12 @@ F.[[Call]](V, argumentsList)
 
 抽象操作的运行流程，一般是下面这样。
 
-> 1. Let `resultCompletionRecord` be `AbstractOp()`.
-> 1. If `resultCompletionRecord` is an abrupt completion, return `resultCompletionRecord`.
-> 1. Let `result` be `resultCompletionRecord.[[Value]]`.
+> 1. Let `result` be `AbstractOp()`.
+> 1. If `result` is an abrupt completion, return `result`.
+> 1. Set `result` to `result.[[Value]]`.
 > 1. return `result`.
 
-上面的第一步是调用抽象操作`AbstractOp()`，得到`resultCompletionRecord`，这是一个 Completion Record。第二步，如果这个 Record 属于 abrupt completion，就将`resultCompletionRecord`返回给用户。如果此处没有返回，就表示运行结果正常，所得的值存放在`resultCompletionRecord.[[Value]]`属性。第三步，将这个值记为`result`。第四步，将`result`返回给用户。
+上面的第一步调用了抽象操作`AbstractOp()`，得到`result`，这是一个 Completion Record。第二步，如果`result`属于 abrupt completion，就直接返回。如果此处没有返回，表示`result`属于 normal completion。第三步，将`result`的值设置为`resultCompletionRecord.[[Value]]`。第四步，返回`result`。
 
 ES6 规格将这个标准流程，使用简写的方式表达。
 
@@ -111,7 +111,7 @@ ES6 规格将这个标准流程，使用简写的方式表达。
 0 == null
 ```
 
-如果你不确定答案，或者想知道语言内部怎么处理，就可以去查看规格，[7.2.12 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-7.2.12)是对相等运算符（`==`）的描述。
+如果你不确定答案，或者想知道语言内部怎么处理，就可以去查看规格，[7.2.12 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-abstract-equality-comparison)是对相等运算符（`==`）的描述。
 
 规格对每一种语法行为的描述，都分成两部分：先是总体的行为描述，然后是实现的算法细节。相等运算符的总体描述，只有一句话。
 
@@ -123,19 +123,19 @@ ES6 规格将这个标准流程，使用简写的方式表达。
 
 > 1. ReturnIfAbrupt(x).
 > 1. ReturnIfAbrupt(y).
-> 1. If `Type(x)` is the same as `Type(y)`, then\
->    Return the result of performing Strict Equality Comparison `x === y`.
+> 1. If `Type(x)` is the same as `Type(y)`, then
+>    1. Return the result of performing Strict Equality Comparison `x === y`.
 > 1. If `x` is `null` and `y` is `undefined`, return `true`.
 > 1. If `x` is `undefined` and `y` is `null`, return `true`.
-> 1. If `Type(x)` is Number and `Type(y)` is String,\
+> 1. If `Type(x)` is Number and `Type(y)` is String,
 >    return the result of the comparison `x == ToNumber(y)`.
-> 1. If `Type(x)` is String and `Type(y)` is Number,\
+> 1. If `Type(x)` is String and `Type(y)` is Number,
 >    return the result of the comparison `ToNumber(x) == y`.
 > 1. If `Type(x)` is Boolean, return the result of the comparison `ToNumber(x) == y`.
 > 1. If `Type(y)` is Boolean, return the result of the comparison `x == ToNumber(y)`.
-> 1. If `Type(x)` is either String, Number, or Symbol and `Type(y)` is Object, then\
+> 1. If `Type(x)` is either String, Number, or Symbol and `Type(y)` is Object, then
 >    return the result of the comparison `x == ToPrimitive(y)`.
-> 1. If `Type(x)` is Object and `Type(y)` is either String, Number, or Symbol, then\
+> 1. If `Type(x)` is Object and `Type(y)` is either String, Number, or Symbol, then
 >    return the result of the comparison `ToPrimitive(x) == y`.
 > 1. Return `false`.
 
@@ -154,7 +154,7 @@ ES6 规格将这个标准流程，使用简写的方式表达。
 > 1. 如果`Type(x)`是对象，`Type(y)`是字符串或数值或`Symbol`值，返回`ToPrimitive(x) == y`的结果。
 > 1. 返回`false`。
 
-由于`0`的类型是数值，`null`的类型是 Null（这是规格[4.3.13 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-4.3.13)的规定，是内部 Type 运算的结果，跟`typeof`运算符无关）。因此上面的前 11 步都得不到结果，要到第 12 步才能得到`false`。
+由于`0`的类型是数值，`null`的类型是 Null（这是规格[4.3.13 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-terms-and-definitions-null-type)的规定，是内部 Type 运算的结果，跟`typeof`运算符无关）。因此上面的前 11 步都得不到结果，要到第 12 步才能得到`false`。
 
 ```javascript
 0 == null // false
@@ -199,7 +199,7 @@ a2.map(n => 1) // [, , ,]
 
 为什么`a1`与`a2`成员的行为不一致？数组的成员是`undefined`或空位，到底有什么不同？
 
-规格的[12.2.5 小节《数组的初始化》](http://www.ecma-international.org/ecma-262/6.0/#sec-12.2.5)给出了答案。
+规格的[12.2.5 小节《数组的初始化》](http://www.ecma-international.org/ecma-262/6.0/#sec-array-initializer)给出了答案。
 
 > “Array elements may be elided at the beginning, middle or end of the element list. Whenever a comma in the element list is not preceded by an AssignmentExpression (i.e., a comma at the beginning or after another comma), the missing array element contributes to the length of the Array and increases the index of subsequent elements. Elided array elements are not defined. If an element is elided at the end of an array, that element does not contribute to the length of the Array.”
 
@@ -215,7 +215,7 @@ a2.map(n => 1) // [, , ,]
 
 ## 数组的 map 方法
 
-规格的[22.1.3.15 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-22.1.3.15)定义了数组的`map`方法。该小节先是总体描述`map`方法的行为，里面没有提到数组空位。
+规格的[22.1.3.15 小节](http://www.ecma-international.org/ecma-262/6.0/#sec-array.prototype.map)定义了数组的`map`方法。该小节先是总体描述`map`方法的行为，里面没有提到数组空位。
 
 后面的算法描述是这样的。
 
@@ -228,18 +228,18 @@ a2.map(n => 1) // [, , ,]
 > 1. Let `A` be `ArraySpeciesCreate(O, len)`.
 > 1. `ReturnIfAbrupt(A)`.
 > 1. Let `k` be 0.
-> 1. Repeat, while `k` < `len`\
->    a. Let `Pk` be `ToString(k)`.\
->    b. Let `kPresent` be `HasProperty(O, Pk)`.\
->    c. `ReturnIfAbrupt(kPresent)`.\
->    d. If `kPresent` is `true`, then\
->    d-1. Let `kValue` be `Get(O, Pk)`.\
->    d-2. `ReturnIfAbrupt(kValue)`.\
->    d-3. Let `mappedValue` be `Call(callbackfn, T, «kValue, k, O»)`.\
->    d-4. `ReturnIfAbrupt(mappedValue)`.\
->    d-5. Let `status` be `CreateDataPropertyOrThrow (A, Pk, mappedValue)`.\
->    d-6. `ReturnIfAbrupt(status)`.\
->    e. Increase `k` by 1.
+> 1. Repeat, while `k` < `len`
+>    1. Let `Pk` be `ToString(k)`.
+>    1. Let `kPresent` be `HasProperty(O, Pk)`.
+>    1. `ReturnIfAbrupt(kPresent)`.
+>    1. If `kPresent` is `true`, then
+>       1. Let `kValue` be `Get(O, Pk)`.
+>       1. `ReturnIfAbrupt(kValue)`.
+>       1. Let `mappedValue` be `Call(callbackfn, T, «kValue, k, O»)`.
+>       1. `ReturnIfAbrupt(mappedValue)`.
+>       1. Let `status` be `CreateDataPropertyOrThrow (A, Pk, mappedValue)`.
+>       1. `ReturnIfAbrupt(status)`.
+>    1. Increase `k` by 1.
 > 1. Return `A`.
 
 翻译如下。
@@ -253,21 +253,21 @@ a2.map(n => 1) // [, , ,]
 > 1. 生成一个新的数组`A`，跟当前数组的`length`属性保持一致
 > 1. 如果报错就返回
 > 1. 设定`k`等于 0
-> 1. 只要`k`小于当前数组的`length`属性，就重复下面步骤\
->    a. 设定`Pk`等于`ToString(k)`，即将`K`转为字符串\
->    b. 设定`kPresent`等于`HasProperty(O, Pk)`，即求当前数组有没有指定属性\
->    c. 如果报错就返回\
->    d. 如果`kPresent`等于`true`，则进行下面步骤\
->    d-1. 设定`kValue`等于`Get(O, Pk)`，取出当前数组的指定属性\
->    d-2. 如果报错就返回\
->    d-3. 设定`mappedValue`等于`Call(callbackfn, T, «kValue, k, O»)`，即执行回调函数\
->    d-4. 如果报错就返回\
->    d-5. 设定`status`等于`CreateDataPropertyOrThrow (A, Pk, mappedValue)`，即将回调函数的值放入`A`数组的指定位置\
->    d-6. 如果报错就返回\
->    e. `k`增加 1
+> 1. 只要`k`小于当前数组的`length`属性，就重复下面步骤
+>    1. 设定`Pk`等于`ToString(k)`，即将`K`转为字符串
+>    1. 设定`kPresent`等于`HasProperty(O, Pk)`，即求当前数组有没有指定属性
+>    1. 如果报错就返回
+>    1. 如果`kPresent`等于`true`，则进行下面步骤
+>       1. 设定`kValue`等于`Get(O, Pk)`，取出当前数组的指定属性
+>       1. 如果报错就返回
+>       1. 设定`mappedValue`等于`Call(callbackfn, T, «kValue, k, O»)`，即执行回调函数
+>       1. 如果报错就返回
+>       1. 设定`status`等于`CreateDataPropertyOrThrow (A, Pk, mappedValue)`，即将回调函数的值放入`A`数组的指定位置
+>       1. 如果报错就返回
+>    1. `k`增加 1
 > 1. 返回`A`
 
-仔细查看上面的算法，可以发现，当处理一个全是空位的数组时，前面步骤都没有问题。进入第 10 步的 b 时，`kpresent`会报错，因为空位对应的属性名，对于数组来说是不存在的，因此就会返回，不会进行后面的步骤。
+仔细查看上面的算法，可以发现，当处理一个全是空位的数组时，前面步骤都没有问题。进入第 10 步中第 2 步时，`kPresent`会报错，因为空位对应的属性名，对于数组来说是不存在的，因此就会返回，不会进行后面的步骤。
 
 ```javascript
 const arr = [, , ,];

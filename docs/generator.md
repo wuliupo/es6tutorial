@@ -310,7 +310,7 @@ wrapped().next('hello!')
 
 ## for...of 循环
 
-`for...of`循环可以自动遍历 Generator 函数时生成的`Iterator`对象，且此时不再需要调用`next`方法。
+`for...of`循环可以自动遍历 Generator 函数运行时生成的`Iterator`对象，且此时不再需要调用`next`方法。
 
 ```javascript
 function* foo() {
@@ -336,8 +336,8 @@ for (let v of foo()) {
 function* fibonacci() {
   let [prev, curr] = [0, 1];
   for (;;) {
-    [prev, curr] = [curr, prev + curr];
     yield curr;
+    [prev, curr] = [curr, prev + curr];
   }
 }
 
@@ -534,6 +534,24 @@ g.throw();
 
 上面代码中，`g.throw`抛出错误以后，没有任何`try...catch`代码块可以捕获这个错误，导致程序报错，中断执行。
 
+`throw`方法抛出的错误要被内部捕获，前提是必须至少执行过一次`next`方法。
+
+```javascript
+function* gen() {
+  try {
+    yield 1;
+  } catch (e) {
+    console.log('内部捕获');
+  }
+}
+
+var g = gen();
+g.throw(1);
+// Uncaught 1
+```
+
+上面代码中，`g.throw(1)`执行时，`next`方法一次都没有执行过。这时，抛出的错误不会被内部捕获，而是直接在外部抛出，导致程序出错。这种行为其实很好理解，因为第一次执行`next`方法，等同于启动执行 Generator 函数的内部代码，否则 Generator 函数还没有开始执行，这时`throw`方法抛错只可能抛出在函数外部。
+
 `throw`方法被捕获以后，会附带执行下一条`yield`表达式。也就是说，会附带执行一次`next`方法。
 
 ```javascript
@@ -649,7 +667,7 @@ log(g());
 
 ## Generator.prototype.return()
 
-Generator 函数返回的遍历器对象，还有一个`return`方法，可以返回给定的值，并且终结遍历 Generator 函数。
+Generator 函数返回的遍历器对象，还有一个`return()`方法，可以返回给定的值，并且终结遍历 Generator 函数。
 
 ```javascript
 function* gen() {
@@ -665,9 +683,9 @@ g.return('foo') // { value: "foo", done: true }
 g.next()        // { value: undefined, done: true }
 ```
 
-上面代码中，遍历器对象`g`调用`return`方法后，返回值的`value`属性就是`return`方法的参数`foo`。并且，Generator 函数的遍历就终止了，返回值的`done`属性为`true`，以后再调用`next`方法，`done`属性总是返回`true`。
+上面代码中，遍历器对象`g`调用`return()`方法后，返回值的`value`属性就是`return()`方法的参数`foo`。并且，Generator 函数的遍历就终止了，返回值的`done`属性为`true`，以后再调用`next()`方法，`done`属性总是返回`true`。
 
-如果`return`方法调用时，不提供参数，则返回值的`value`属性为`undefined`。
+如果`return()`方法调用时，不提供参数，则返回值的`value`属性为`undefined`。
 
 ```javascript
 function* gen() {
@@ -682,7 +700,7 @@ g.next()        // { value: 1, done: false }
 g.return() // { value: undefined, done: true }
 ```
 
-如果 Generator 函数内部有`try...finally`代码块，那么`return`方法会推迟到`finally`代码块执行完再执行。
+如果 Generator 函数内部有`try...finally`代码块，且正在执行`try`代码块，那么`return()`方法会导致立刻进入`finally`代码块，执行完以后，整个函数才会结束。
 
 ```javascript
 function* numbers () {
@@ -704,11 +722,11 @@ g.next() // { value: 5, done: false }
 g.next() // { value: 7, done: true }
 ```
 
-上面代码中，调用`return`方法后，就开始执行`finally`代码块，然后等到`finally`代码块执行完，再执行`return`方法。
+上面代码中，调用`return()`方法后，就开始执行`finally`代码块，不执行`try`里面剩下的代码了，然后等到`finally`代码块执行完，再返回`return()`方法指定的返回值。
 
 ## next()、throw()、return() 的共同点
 
-网友 vision57 提出，`next()`、`throw()`、`return()`这三个方法本质上是同一件事，可以放在一起理解。它们的作用都是让 Generator 函数恢复执行，并且使用不同的语句替换`yield`表达式。
+`next()`、`throw()`、`return()`这三个方法本质上是同一件事，可以放在一起理解。它们的作用都是让 Generator 函数恢复执行，并且使用不同的语句替换`yield`表达式。
 
 `next()`是将`yield`表达式替换成一个值。
 
@@ -746,7 +764,7 @@ gen.return(2); // Object {value: 2, done: true}
 
 ## yield\* 表达式
 
-如果在 Generator 函数内部，调用另一个 Generator 函数，默认情况下是没有效果的。
+如果在 Generator 函数内部，调用另一个 Generator 函数。需要在前者的函数体内部，自己手动完成遍历。
 
 ```javascript
 function* foo() {
@@ -756,20 +774,25 @@ function* foo() {
 
 function* bar() {
   yield 'x';
-  foo();
+  // 手动遍历 foo()
+  for (let i of foo()) {
+    console.log(i);
+  }
   yield 'y';
 }
 
 for (let v of bar()){
   console.log(v);
 }
-// "x"
-// "y"
+// x
+// a
+// b
+// y
 ```
 
-上面代码中，`foo`和`bar`都是 Generator 函数，在`bar`里面调用`foo`，是不会有效果的。
+上面代码中，`foo`和`bar`都是 Generator 函数，在`bar`里面调用`foo`，就需要手动遍历`foo`。如果有多个 Generator 函数嵌套，写起来就非常麻烦。
 
-这个就需要用到`yield*`表达式，用来在一个 Generator 函数里面执行另一个 Generator 函数。
+ES6 提供了`yield*`表达式，作为解决办法，用来在一个 Generator 函数里面执行另一个 Generator 函数。
 
 ```javascript
 function* bar() {
@@ -985,6 +1008,12 @@ for(let x of iterTree(tree)) {
 // c
 // d
 // e
+```
+
+由于扩展运算符`...`默认调用 Iterator 接口，所以上面这个函数也可以用于嵌套数组的平铺。
+
+```javascript
+[...iterTree(tree)] // ["a", "b", "c", "d", "e"]
 ```
 
 下面是一个稍微复杂的例子，使用`yield*`语句遍历完全二叉树。
@@ -1215,7 +1244,31 @@ var clock = function* () {
 
 Generator 函数是 ES6 对协程的实现，但属于不完全实现。Generator 函数被称为“半协程”（semi-coroutine），意思是只有 Generator 函数的调用者，才能将程序的执行权还给 Generator 函数。如果是完全执行的协程，任何函数都可以让暂停的协程继续执行。
 
-如果将 Generator 函数当作协程，完全可以将多个需要互相协作的任务写成 Generator 函数，它们之间使用`yield`表示式交换控制权。
+如果将 Generator 函数当作协程，完全可以将多个需要互相协作的任务写成 Generator 函数，它们之间使用`yield`表达式交换控制权。
+
+### Generator 与上下文
+
+JavaScript 代码运行时，会产生一个全局的上下文环境（context，又称运行环境），包含了当前所有的变量和对象。然后，执行函数（或块级代码）的时候，又会在当前上下文环境的上层，产生一个函数运行的上下文，变成当前（active）的上下文，由此形成一个上下文环境的堆栈（context stack）。
+
+这个堆栈是“后进先出”的数据结构，最后产生的上下文环境首先执行完成，退出堆栈，然后再执行完成它下层的上下文，直至所有代码执行完成，堆栈清空。
+
+Generator 函数不是这样，它执行产生的上下文环境，一旦遇到`yield`命令，就会暂时退出堆栈，但是并不消失，里面的所有变量和对象会冻结在当前状态。等到对它执行`next`命令时，这个上下文环境又会重新加入调用栈，冻结的变量和对象恢复执行。
+
+```javascript
+function* gen() {
+  yield 1;
+  return 2;
+}
+
+let g = gen();
+
+console.log(
+  g.next().value,
+  g.next().value,
+);
+```
+
+上面代码中，第一次执行`g.next()`时，Generator 函数`gen`的上下文会加入堆栈，即开始运行`gen`内部的代码。等遇到`yield 1`时，`gen`上下文退出堆栈，内部状态冻结。第二次执行`g.next()`时，`gen`上下文重新加入堆栈，变成当前的上下文，重新恢复执行。
 
 ### Generator 与上下文
 
